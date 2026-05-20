@@ -325,7 +325,7 @@ export default function GalleryPage() {
             <pre className="text-[7.5px] text-zinc-300 font-mono leading-relaxed bg-zinc-950/50 p-2 rounded-xl border border-zinc-900/60 overflow-hidden">
               <span className="text-pink-400 font-bold">const</span> user = <span className="text-cyan-400">null</span>;{"\n"}
               <span className="text-pink-400 font-bold">const</span> name = user?.name <span className="text-purple-400">??</span> <span className="text-emerald-400">'Guest'</span>;{"\n"}
-              console.<span className="text-purple-400">log</span>(name); <span className="text-zinc-500">// Output: Guest</span>
+              console.<span className="text-purple-400">log</span>(name); <span className="text-zinc-500">{"// Output: Guest"}</span>{"\n"}
             </pre>
           </div>
         );
