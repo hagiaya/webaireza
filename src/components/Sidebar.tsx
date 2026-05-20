@@ -6,7 +6,8 @@ import { usePathname } from 'next/navigation';
 import { 
   LayoutDashboard, FileText, Mic, 
   Calendar, Lightbulb, BarChart3, 
-  Settings, Menu, X, Sparkles, Film 
+  Settings, Menu, X, Sparkles, Film,
+  FolderHeart
 } from 'lucide-react';
 import { isMockDb } from '@/lib/supabase';
 
@@ -23,6 +24,7 @@ export default function Sidebar({ className = '' }: SidebarProps) {
     { name: 'Script Generator', path: '/scripts', icon: FileText },
     { name: 'Audio Generator', path: '/audio', icon: Mic },
     { name: 'Video Generator', path: '/video', icon: Film },
+    { name: 'Video Gallery', path: '/gallery', icon: FolderHeart },
     { name: 'Content Calendar', path: '/calendar', icon: Calendar },
     { name: 'Topic Bank', path: '/topics', icon: Lightbulb },
     { name: 'Analytics', path: '/analytics', icon: BarChart3 },

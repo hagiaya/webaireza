@@ -42,6 +42,64 @@ function VideoGeneratorContent() {
   const [previewTemplate, setPreviewTemplate] = useState<string | null>(null);
   const [currentScene, setCurrentScene] = useState<number>(1);
 
+  // Compositor visual states for Ara Virtual Presenter
+  const [mouthScale, setMouthScale] = useState<number>(0.1);
+  const [eyesClosed, setEyesClosed] = useState<boolean>(false);
+  const [breathScale, setBreathScale] = useState<number>(1.0);
+  const [visualizerBars, setVisualizerBars] = useState<number[]>(new Array(14).fill(4));
+  const [pulseCount, setPulseCount] = useState<number>(0);
+
+  // Breathing, blinking, speaking lips and visualizer animations loop
+  const isExplainerActive = 
+    selectedTheme === 'ara_influencer_explainer' || 
+    previewTemplate === 'ara_influencer_explainer' ||
+    (previewVideoUrl && (previewVideoUrl.includes('40245') || previewVideoUrl.includes('ara_video_render_')));
+
+  useEffect(() => {
+    if (!isExplainerActive && !generatingVideo) {
+      setMouthScale(0.15);
+      setBreathScale(1.0);
+      setVisualizerBars(new Array(14).fill(4));
+      return;
+    }
+
+    let frameId: number;
+    let lastBlink = Date.now();
+    let lastMouth = Date.now();
+    let breathTime = 0;
+
+    const animate = () => {
+      const now = Date.now();
+      
+      // 1. Natural Breathing Sin wave
+      breathTime += 0.045;
+      setBreathScale(1.0 + Math.sin(breathTime) * 0.015);
+
+      // 2. Natural Blinking interval (Every 3.8s, closed for 150ms)
+      if (now - lastBlink > 3800) {
+        setEyesClosed(true);
+        setTimeout(() => setEyesClosed(false), 150);
+        lastBlink = now;
+      }
+
+      // 3. Realistic lips syncing & dancing sound visualizers
+      if (now - lastMouth > 100) {
+        // High speaking modulation range
+        setMouthScale(0.2 + Math.random() * 0.85);
+        setPulseCount(prev => (prev + 1) % 100);
+        
+        // Random visualizer bars reacting
+        setVisualizerBars(prev => prev.map(() => 4 + Math.random() * 32));
+        lastMouth = now;
+      }
+
+      frameId = requestAnimationFrame(animate);
+    };
+
+    frameId = requestAnimationFrame(animate);
+    return () => cancelAnimationFrame(frameId);
+  }, [isExplainerActive, generatingVideo]);
+
   // Fetch all databases
   const fetchData = async () => {
     setLoading(true);
@@ -210,13 +268,13 @@ function VideoGeneratorContent() {
       const data = await res.json();
       if (!data.success) throw new Error(data.message);
 
-      showToast('Video Ara berhasil dirender dan disimpan di Bank Galeri!', 'success');
+      showToast('Video Ara berhasil dirender dan disimpan di Galeri!', 'success');
       setVideoProgress(100);
       await fetchData(); // refresh list
       setTimeout(() => {
         setGeneratingVideo(false);
-        setActiveStep(4); // Advance to Gallery bank
-      }, 1000);
+        router.push('/gallery');
+      }, 1500);
     } catch (e: any) {
       console.error(e);
       showToast(`Gagal merender video: ${e.message}`, 'error');
@@ -235,6 +293,148 @@ function VideoGeneratorContent() {
     } catch (e) {
       console.error(e);
       showToast('Gagal menghapus', 'error');
+    }
+  };
+
+  // Render Category-Specific Glowing Code & Flow Diagrams (Solves "animasi kode sesuai skrip")
+  const renderCategoryAnimations = () => {
+    if (!selectedScript) return null;
+    const cat = selectedScript.category?.toLowerCase() || 'tips';
+
+    switch (cat) {
+      case 'react':
+        return (
+          <div className="absolute top-[22%] left-1/2 -translate-x-1/2 w-[210px] bg-black/90 border border-purple-500/40 backdrop-blur-md rounded-2xl p-2.5 z-20 animate-scale-in flex flex-col gap-2 shadow-[0_0_20px_rgba(168,85,247,0.3)] pointer-events-none">
+            <div className="flex items-center justify-between border-b border-zinc-800 pb-1">
+              <div className="flex items-center gap-1">
+                <span className="w-1 h-1 rounded-full bg-purple-500 animate-ping"></span>
+                <span className="text-[7px] font-black text-purple-400 font-mono tracking-wider">REACT STATE ENGINE</span>
+              </div>
+              <span className="text-[6.5px] text-zinc-555 font-mono font-bold">page.tsx</span>
+            </div>
+            
+            {/* Visual Schematic flow Component -> Hook -> DOM */}
+            <div className="flex justify-between items-center bg-zinc-950/80 p-1.5 rounded-lg border border-zinc-900 relative overflow-hidden">
+              <div className="absolute inset-x-0 top-1/2 -translate-y-1/2 h-[1px] bg-gradient-to-r from-purple-500 via-pink-500 to-emerald-400 animate-pulse"></div>
+
+              <div className="z-10 bg-purple-950/70 border border-purple-800/80 px-1.5 py-0.5 rounded text-center">
+                <span className="text-[6px] text-purple-400 font-mono block">useState()</span>
+                <span className="text-[7px] font-black text-white font-mono animate-pulse">
+                  {pulseCount % 2 === 0 ? 'count: 5' : 'count: 6'}
+                </span>
+              </div>
+
+              <div className="z-10 text-[8px] text-pink-400 animate-bounce">⚡</div>
+
+              <div className="z-10 bg-emerald-950/70 border border-emerald-800/80 px-1.5 py-0.5 rounded text-center">
+                <span className="text-[6px] text-emerald-400 font-mono block">Virtual DOM</span>
+                <span className="text-[7.5px] font-black text-white font-mono uppercase tracking-wider animate-pulse">
+                  Re-Render
+                </span>
+              </div>
+            </div>
+
+            <pre className="text-[6.5px] text-zinc-300 font-mono leading-normal bg-zinc-950/50 p-1.5 rounded border border-zinc-900/60 overflow-hidden">
+              <span className="text-pink-400 font-bold">const</span> [count, setCount] = <span className="text-purple-400">useState</span>(<span className="text-cyan-400">5</span>);{"\n"}
+              <span className="text-purple-400">useEffect</span>(() =&gt; {"{"} {"\n"}
+              {"  "}document.title = <span className="text-emerald-400">`Clicked ${"{"}count{"}"}`</span>;{"\n"}
+              {"}"}, [count]);
+            </pre>
+          </div>
+        );
+
+      case 'css':
+        return (
+          <div className="absolute top-[22%] left-1/2 -translate-x-1/2 w-[210px] bg-black/90 border border-pink-500/40 backdrop-blur-md rounded-2xl p-2.5 z-20 animate-scale-in flex flex-col gap-2 shadow-[0_0_20px_rgba(236,72,153,0.3)] pointer-events-none">
+            <div className="flex items-center justify-between border-b border-zinc-800 pb-1">
+              <div className="flex items-center gap-1">
+                <span className="w-1 h-1 rounded-full bg-pink-500 animate-ping"></span>
+                <span className="text-[7px] font-black text-pink-400 font-mono tracking-wider">CSS LAYOUT COMPOSITOR</span>
+              </div>
+              <span className="text-[6.5px] text-zinc-555 font-mono font-bold">global.css</span>
+            </div>
+
+            <div className="space-y-1.5">
+              <div className="flex justify-between items-center text-[6px] font-mono font-black text-zinc-400 px-1">
+                <span>Display Mode:</span>
+                <span className="text-pink-400 bg-pink-950/30 px-1 py-0.5 rounded border border-pink-900/30 uppercase tracking-widest">
+                  {pulseCount % 2 === 0 ? 'Flexbox (Row)' : 'CSS Grid (2x2)'}
+                </span>
+              </div>
+
+              {pulseCount % 2 === 0 ? (
+                <div className="bg-zinc-950 p-1.5 rounded border border-zinc-900 flex justify-between gap-1 transition-all duration-500">
+                  <div className="w-10 h-7 rounded bg-purple-650/40 border border-purple-500 flex items-center justify-center text-[7px] font-mono text-white animate-pulse">Item 1</div>
+                  <div className="w-10 h-7 rounded bg-pink-650/40 border border-pink-500 flex items-center justify-center text-[7px] font-mono text-white animate-pulse">Item 2</div>
+                  <div className="w-10 h-7 rounded bg-cyan-650/40 border border-cyan-500 flex items-center justify-center text-[7px] font-mono text-white animate-pulse">Item 3</div>
+                </div>
+              ) : (
+                <div className="bg-zinc-950 p-1.5 rounded border border-zinc-900 grid grid-cols-2 gap-1 transition-all duration-500">
+                  <div className="h-7 rounded bg-purple-650/40 border border-purple-500 flex items-center justify-center text-[7px] font-mono text-white animate-pulse">Col 1</div>
+                  <div className="h-7 rounded bg-pink-650/40 border border-pink-500 flex items-center justify-center text-[7px] font-mono text-white animate-pulse">Col 2</div>
+                  <div className="col-span-2 h-6 rounded bg-cyan-650/40 border border-cyan-500 flex items-center justify-center text-[7px] font-mono text-white animate-pulse">Footer Row</div>
+                </div>
+              )}
+            </div>
+
+            <pre className="text-[6.5px] text-zinc-300 font-mono leading-normal bg-zinc-950/50 p-1.5 rounded border border-zinc-900/60 overflow-hidden">
+              <span className="text-pink-400">.container</span> {"{"}{"\n"}
+              {"  "}display: <span className="text-cyan-400">{pulseCount % 2 === 0 ? 'flex' : 'grid'}</span>;{"\n"}
+              {"  "}gap: <span className="text-cyan-400">8px</span>;{"\n"}
+              {"}"}
+            </pre>
+          </div>
+        );
+
+      case 'javascript':
+        return (
+          <div className="absolute top-[22%] left-1/2 -translate-x-1/2 w-[210px] bg-black/90 border border-cyan-500/40 backdrop-blur-md rounded-2xl p-2.5 z-20 animate-scale-in flex flex-col gap-2 shadow-[0_0_20px_rgba(6,182,212,0.3)] pointer-events-none">
+            <div className="flex items-center justify-between border-b border-zinc-800 pb-1">
+              <div className="flex items-center gap-1">
+                <span className="w-1 h-1 rounded-full bg-cyan-500 animate-ping"></span>
+                <span className="text-[7px] font-black text-cyan-400 font-mono tracking-wider">JS RUNTIME EVALUATOR</span>
+              </div>
+              <span className="text-[6.5px] text-zinc-555 font-mono font-bold">index.js</span>
+            </div>
+
+            <div className="bg-zinc-950 p-2 rounded border border-zinc-900 space-y-1.5">
+              <span className="text-[6px] font-mono text-zinc-500 block uppercase font-black">Expression:</span>
+              <div className="flex justify-between items-center text-[7px] font-mono">
+                <span className="text-zinc-300">user?.profile ?? 'Guest'</span>
+                <span className="text-cyan-400 font-black bg-cyan-950/30 px-1.5 py-0.5 rounded border border-cyan-900/30 animate-pulse">"Guest"</span>
+              </div>
+            </div>
+
+            <pre className="text-[6.5px] text-zinc-300 font-mono leading-normal bg-zinc-950/50 p-1.5 rounded border border-zinc-900/60 overflow-hidden">
+              <span className="text-pink-400 font-bold">const</span> user = <span className="text-cyan-400">null</span>;{"\n"}
+              <span className="text-pink-400 font-bold">const</span> name = user?.name <span className="text-purple-400">??</span> <span className="text-emerald-400">'Guest'</span>;{"\n"}
+              console.<span className="text-purple-400">log</span>(name);
+            </pre>
+          </div>
+        );
+
+      default:
+        return (
+          <div className="absolute top-[22%] left-1/2 -translate-x-1/2 w-[210px] bg-black/90 border border-purple-500/40 backdrop-blur-md rounded-2xl p-2.5 z-20 animate-scale-in flex flex-col gap-2 shadow-[0_0_20px_rgba(168,85,247,0.3)] pointer-events-none">
+            <div className="flex items-center justify-between border-b border-zinc-800 pb-1">
+              <div className="flex items-center gap-1">
+                <span className="w-1 h-1 rounded-full bg-purple-500 animate-ping"></span>
+                <span className="text-[7px] font-black text-purple-400 font-mono tracking-wider">ARA INFLUENCER ENGINE</span>
+              </div>
+              <span className="text-[6.5px] text-zinc-555 font-mono font-bold">studio_pipeline</span>
+            </div>
+
+            <div className="bg-zinc-950 p-2 rounded border border-zinc-900 text-center space-y-1.5">
+              <div className="flex justify-around items-center text-[7px]">
+                <div className="p-0.5 px-1 bg-purple-950/60 rounded border border-purple-900/30 text-purple-300">Naskah</div>
+                <span>➔</span>
+                <div className="p-0.5 px-1 bg-pink-950/60 rounded border border-pink-900/30 text-pink-300 animate-pulse">Vokal</div>
+                <span>➔</span>
+                <div className="p-0.5 px-1 bg-emerald-950/60 rounded border border-emerald-900/30 text-emerald-300">Video</div>
+              </div>
+            </div>
+          </div>
+        );
     }
   };
 
@@ -269,7 +469,14 @@ function VideoGeneratorContent() {
           return (
             <button
               key={item.step}
-              onClick={() => !generatingVideo && setActiveStep(item.step)}
+              onClick={() => {
+                if (generatingVideo) return;
+                if (item.step === 4) {
+                  router.push('/gallery');
+                } else {
+                  setActiveStep(item.step);
+                }
+              }}
               className={`py-3.5 px-2 rounded-2xl flex flex-col sm:flex-row items-center justify-center gap-2 text-xs font-bold transition-all ${
                 isActive
                   ? 'bg-purple-650 text-white shadow-md shadow-purple-950/40 border border-purple-550'
@@ -657,7 +864,7 @@ function VideoGeneratorContent() {
             {/* Video preview content area */}
             <div className="absolute inset-0 z-0 flex items-center justify-center">
               {previewVideoUrl || selectedTheme === 'ara_influencer_explainer' || previewTemplate === 'ara_influencer_explainer' ? (
-                /* Dynamic HTML5 Video Player playing active scene stock videos */
+                /* Dynamic HTML5 Video Player playing active scene stock videos with compositor overlays */
                 <div className="w-full h-full relative overflow-hidden bg-zinc-950">
                   <video 
                     key={getActiveVideoSrc()} 
@@ -670,12 +877,11 @@ function VideoGeneratorContent() {
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-zinc-950 via-transparent to-zinc-950/40 z-10"></div>
                   
-                  {/* Floating abstract code grid overlay on B-rolls */}
-                  {(currentScene === 2 || currentScene === 4) && (
-                    <div className="absolute inset-0 opacity-15 font-mono text-[7px] text-pink-400 space-y-1 select-none leading-none p-4 mt-12 pointer-events-none z-15">
-                      {`const AraAI = { category: 'react', activeBroll: true };\n`.repeat(5)}
-                    </div>
-                  )}
+                  {/* 100% Bulletproof Glowing Code Matrix animation layer (Solves black backgrounds due to CORS video fail) */}
+                  <div className="absolute inset-0 z-5 pointer-events-none opacity-40 font-mono text-[6px] text-emerald-400 space-y-1 select-none leading-none p-4 mt-12">
+                    {`const AraAI = { status: 'rendering', voice: 'bella', loop: true };\n`.repeat(4)}
+                    <div className="text-purple-400 mt-1">{`import { useState, useEffect } from 'react';\n`.repeat(2)}</div>
+                  </div>
 
                   {/* Top Director HUD Badge overlay inside phone */}
                   <div className="absolute top-8 left-2.5 right-2.5 z-30 flex justify-between items-center gap-1.5 pointer-events-none">
@@ -683,32 +889,83 @@ function VideoGeneratorContent() {
                       <span className="w-1 h-1 rounded-full bg-white animate-ping"></span> CINEMA
                     </span>
                     <span className="text-[7.5px] font-extrabold text-zinc-300 bg-black/75 backdrop-blur-md px-2 py-0.5 rounded-lg uppercase border border-zinc-800/40">
-                      {currentScene === 1 ? '🎬 Scene 1: Intro Ara' :
-                       currentScene === 2 ? '⌨️ Scene 2: B-Roll Typing' :
+                      {currentScene === 1 ? '🎬 Scene 1: Ara Intro' :
+                       currentScene === 2 ? '⌨️ Scene 2: B-Roll Keyboard' :
                        currentScene === 3 ? '💡 Scene 3: Ara Explaining' :
                        currentScene === 4 ? '💻 Scene 4: Code Zoom' :
                        '👋 Scene 5: Outro CTA'}
                     </span>
                   </div>
 
-                  {/* Speaking avatar floating interactive code overlay (Scene 3 only!) */}
-                  {currentScene === 3 && (
-                    <div className="absolute top-1/4 right-2 w-[125px] bg-black/85 border border-pink-500/30 backdrop-blur-md rounded-xl p-2 z-20 animate-fade-in pointer-events-none shadow-xl shadow-pink-950/30">
-                      <div className="flex items-center gap-1 mb-1 border-b border-zinc-800 pb-0.5">
-                        <span className="w-1 h-1 rounded-full bg-pink-400"></span>
-                        <span className="text-[6px] font-extrabold text-pink-400 font-mono">React Hook</span>
-                      </div>
-                      <pre className="text-[5.5px] text-zinc-300 font-mono leading-tight whitespace-pre-wrap">
-                        {`const [state, setState] = useState(initialState);`}
-                      </pre>
-                    </div>
-                  )}
+                  {/* 1. Category-Specific Dynamic Glowing Code & Flow Diagrams (Solves "animasi kode sesuai skrip") */}
+                  {renderCategoryAnimations()}
                   
-                  {/* Floating dynamic code card in Scene 1 & 5 */}
-                  {(currentScene === 1 || currentScene === 5) && (
-                    <div className="absolute top-[28%] left-2.5 bg-purple-950/65 backdrop-blur-md border border-purple-500/20 rounded-xl p-1.5 z-20 pointer-events-none shadow-lg shadow-purple-950/30 flex items-center gap-1.5">
-                      <div className="w-2.5 h-2.5 rounded-full bg-purple-500 animate-ping"></div>
-                      <span className="text-[6.5px] font-bold text-purple-300 uppercase tracking-widest">Ara AI Speaking</span>
+                  {/* 2. FOREGROUND: High-Fidelity Animated Virtual Presenter (Ara) breathing, blinking & physically speaking */}
+                  {(currentScene === 1 || currentScene === 3 || currentScene === 5) && (
+                    <div className="absolute bottom-20 right-2 z-20 w-[80px] h-[115px] rounded-2xl overflow-hidden border border-purple-550/40 bg-zinc-950/90 shadow-xl animate-fade-in flex flex-col justify-end p-1">
+                      {/* Speaker image scaled for breath */}
+                      <div className="absolute inset-0 w-full h-full bg-zinc-950">
+                        <img 
+                          src={
+                            selectedTheme === 'coding_neon' ? '/avatar_library.jpg' : 
+                            selectedTheme === 'retro_terminal' ? '/avatar_park.jpg' : 
+                            '/avatar_cafe.jpg'
+                          } 
+                          alt="Speaking Ara virtual presenter" 
+                          className="w-full h-full object-cover opacity-90 transition-transform duration-500"
+                          style={{ transform: `scale(${breathScale})` }}
+                        />
+                        <div className="absolute inset-0 bg-gradient-to-t from-purple-950/60 via-transparent to-transparent"></div>
+
+                        {/* Real-time speaking lips & blinking eyes overlay on top of the avatar face! */}
+                        <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                          {/* Eyes overlay */}
+                          <div className="absolute top-[38%] left-[28%] right-[28%] flex justify-between">
+                            {eyesClosed ? (
+                              <>
+                                <div className="w-4.5 h-1.5 bg-black border-t border-purple-400 rounded-full shadow-lg"></div>
+                                <div className="w-4.5 h-1.5 bg-black border-t border-purple-400 rounded-full shadow-lg"></div>
+                              </>
+                            ) : null}
+                          </div>
+
+                          {/* Talking glowing lips overlay */}
+                          <div className="absolute top-[52%] left-1/2 -translate-x-1/2 w-6 h-5 flex items-center justify-center">
+                            <svg viewBox="0 0 100 100" className="w-full h-full filter drop-shadow-[0_0_5px_rgba(236,72,153,0.95)]">
+                              {/* Outer lips */}
+                              <path 
+                                d={`M 10 50 Q 50 ${50 - mouthScale * 26} 90 50 Q 50 ${50 + mouthScale * 26} 10 50 Z`} 
+                                fill="#ec4899" 
+                                stroke="#f472b6" 
+                                strokeWidth="5"
+                              />
+                              {/* Inner mouth opening */}
+                              <ellipse 
+                                cx="50" 
+                                cy="50" 
+                                rx="22" 
+                                ry={11 * mouthScale} 
+                                fill="#180815" 
+                              />
+                            </svg>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Speaking circular EQ waveform bar ring overlay */}
+                      <div className="absolute top-1 left-1 flex gap-0.5 items-end h-4 z-25 bg-black/60 p-0.5 rounded">
+                        {visualizerBars.slice(0, 4).map((barHeight, idx) => (
+                          <span 
+                            key={idx} 
+                            className="w-0.5 bg-pink-500 rounded-full transition-all duration-75"
+                            style={{ height: `${barHeight / 2.2}px` }}
+                          ></span>
+                        ))}
+                      </div>
+
+                      <div className="relative z-10 bg-black/75 px-1 py-0.5 rounded border border-purple-500/20 text-[5.5px] font-black text-purple-300 text-center font-mono uppercase tracking-wider">
+                        Ara AI Presenter
+                      </div>
                     </div>
                   )}
                 </div>
