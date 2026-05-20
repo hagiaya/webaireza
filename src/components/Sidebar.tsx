@@ -76,7 +76,7 @@ export default function Sidebar({ className = '' }: SidebarProps) {
             />
           </div>
           <span className="font-extrabold text-base tracking-tight text-white">
-            Ara Studio
+            Alps Studio
           </span>
         </div>
         <button 
@@ -102,7 +102,7 @@ export default function Sidebar({ className = '' }: SidebarProps) {
             </div>
             <div>
               <h1 className="font-extrabold text-base tracking-tight text-white flex items-center gap-1.5 leading-tight">
-                Ara Studio
+                Alps Studio
               </h1>
               <p className="text-[9px] text-zinc-400 font-bold uppercase tracking-wider flex items-center gap-1 mt-0.5">
                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
@@ -126,7 +126,7 @@ export default function Sidebar({ className = '' }: SidebarProps) {
 
         {/* Footer info */}
         <div className="p-6 border-t border-zinc-900 text-[11px] text-zinc-600 font-medium">
-          Ara Studio v1.0.0 &copy; 2026
+          Alps Studio v1.0.0 &copy; 2026
         </div>
       </aside>
 
@@ -146,7 +146,7 @@ export default function Sidebar({ className = '' }: SidebarProps) {
                 <div className="w-8 h-8 rounded-lg bg-gradient-to-tr from-purple-600 to-pink-500 flex items-center justify-center text-white shadow-md">
                   <Sparkles className="w-4 h-4" />
                 </div>
-                <span className="font-extrabold text-base text-white">Ara Studio</span>
+                <span className="font-extrabold text-base text-white">Alps Studio</span>
               </div>
               <button 
                 onClick={toggleMobileSidebar}
@@ -167,7 +167,7 @@ export default function Sidebar({ className = '' }: SidebarProps) {
             </div>
 
             <div className="p-6 border-t border-zinc-900 text-[10px] text-zinc-600">
-              Ara Studio v1.0.0
+              Alps Studio v1.0.0
             </div>
           </aside>
         </>

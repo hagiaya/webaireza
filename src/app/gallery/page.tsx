@@ -133,6 +133,36 @@ export default function GalleryPage() {
     }
   };
 
+  const handleDownload = async (fileUrl: string, fileName: string) => {
+    if (!fileUrl) return;
+    try {
+      showToast('Menyiapkan file download...', 'info');
+      
+      // If it is a cross-origin Mixkit link or similar, simple download attr will fail.
+      // Fetching the file as a blob forces local download through JavaScript.
+      const response = await fetch(fileUrl);
+      if (!response.ok) throw new Error('CORS or network error');
+      
+      const blob = await response.blob();
+      const blobUrl = window.URL.createObjectURL(blob);
+      
+      const link = document.createElement('a');
+      link.href = blobUrl;
+      link.download = fileName || 'alpsstudio_video.mp4';
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(blobUrl);
+      
+      showToast('Video berhasil diunduh ke perangkat Anda!', 'success');
+    } catch (e) {
+      console.warn('Cross-origin direct download blocked. Falling back to new tab:', e);
+      // Fallback: Open file directly in new tab so they can right-click and save
+      window.open(fileUrl, '_blank');
+      showToast('Mengalihkan ke tautan video di tab baru. Silakan klik kanan dan Simpan Video!', 'success');
+    }
+  };
+
   // Helper to resolve specific fallback stock footage video
   const getPreviewVideoSrc = () => {
     if (!selectedVideo) return '';
@@ -470,16 +500,16 @@ export default function GalleryPage() {
                         Preview
                       </button>
                       
-                      <a
-                        href={vid.file_url}
-                        download={vid.file_name || 'ara_video.mp4'}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="py-2 px-3 bg-purple-650 hover:bg-purple-550 text-white rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5"
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleDownload(vid.file_url, vid.file_name);
+                        }}
+                        className="py-2 px-3 bg-purple-650 hover:bg-purple-550 text-white rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer"
                       >
                         <Download className="w-4 h-4" />
                         Download
-                      </a>
+                      </button>
                     </div>
                   </div>
                 );
@@ -614,7 +644,7 @@ export default function GalleryPage() {
                         
                         {/* Presenter name HUD */}
                         <div className="relative z-10 bg-black/85 px-1.5 py-0.5 rounded-md border border-purple-500/20 text-[6px] font-black text-purple-300 text-center font-mono uppercase tracking-wider">
-                          Ara AI Presenter
+                          alpsstudio Presenter
                         </div>
                       </div>
                     </div>
@@ -637,7 +667,7 @@ export default function GalleryPage() {
                       {/* Cover Details Badge inside phone */}
                       <div className="relative z-10 w-full flex justify-between items-center mt-6">
                         <span className="text-[9px] font-bold text-zinc-300 bg-black/60 backdrop-blur-md px-2.5 py-1 rounded-full border border-zinc-800">
-                          Ara AI Virtual
+                          alpsstudio AI Virtual
                         </span>
                         <span className="text-[9px] font-bold text-pink-400 bg-pink-950/60 backdrop-blur-md px-2.5 py-1 rounded-full border border-pink-850/40 uppercase tracking-widest font-mono">
                           Ready to Play
@@ -662,7 +692,7 @@ export default function GalleryPage() {
                           />
                         </div>
                         <div className="min-w-0 text-left">
-                          <h5 className="text-[9px] font-extrabold text-white">Ara AI Influencer</h5>
+                          <h5 className="text-[9px] font-extrabold text-white">alpsstudio Presenter</h5>
                           <span className="text-[8px] text-zinc-450 font-bold block mt-0.5">Ketuk Play untuk Simulasi Video & Vokal</span>
                         </div>
                       </div>
@@ -675,7 +705,7 @@ export default function GalleryPage() {
                   
                   {/* Top Header line */}
                   <div className="flex justify-between items-center">
-                    <span className="text-[9px] font-bold text-zinc-400 bg-black/45 backdrop-blur-md px-2.5 py-0.5 rounded-full">@aracoding.ai</span>
+                    <span className="text-[9px] font-bold text-zinc-400 bg-black/45 backdrop-blur-md px-2.5 py-0.5 rounded-full">@alpsstudio</span>
                     <span className="text-[9.5px] font-black text-pink-400 bg-pink-950/60 backdrop-blur-md px-2 py-0.5 rounded-full flex items-center gap-0.5 border border-pink-900/30">
                       <span className="w-1 h-1 rounded-full bg-pink-400 animate-pulse"></span> EXPLAINER
                     </span>
@@ -690,7 +720,7 @@ export default function GalleryPage() {
                            currentScene === 2 ? '⌨️ "Mari kita perhatikan bagaimana kodenya berjalan secara cepat, terstruktur, dan bersih..."' :
                            currentScene === 3 ? '💡 "Kita memanfaatkan Hook React terkuat untuk menyimpan status variabel di memori..."' :
                            currentScene === 4 ? '💻 "Sangat dinamis! Setiap ada perubahan data, komponen langsung melakukan render ulang..."' :
-                           `👋 "${activeScript?.cta || 'Klik like, simpan, dan ikuti Ara AI Studio untuk tips coding seru berikutnya!'}"`}
+                           `👋 "${activeScript?.cta || 'Klik like, simpan, dan ikuti Alps Studio untuk tips coding seru berikutnya!'}"`}
                         </p>
                       </div>
                     </div>

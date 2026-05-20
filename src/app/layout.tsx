@@ -6,7 +6,7 @@ import { AudioProvider } from "@/context/AudioContext";
 import { ToastProvider } from "@/context/ToastContext";
 
 export const metadata: Metadata = {
-  title: "Ara Studio - AI Influencer Automation",
+  title: "Alps Studio - AI Influencer Automation",
   description: "Konten edukasi coding otomatis untuk TikTok, Instagram, YouTube Shorts",
 };
 

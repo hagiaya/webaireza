@@ -296,6 +296,34 @@ function VideoGeneratorContent() {
     }
   };
 
+  const handleDownload = async (fileUrl: string, fileName: string) => {
+    if (!fileUrl) return;
+    try {
+      showToast('Menyiapkan file download...', 'info');
+      
+      // Blob fetching downloads cross-origin mixkit/royalty-free files properly
+      const response = await fetch(fileUrl);
+      if (!response.ok) throw new Error('CORS or network error');
+      
+      const blob = await response.blob();
+      const blobUrl = window.URL.createObjectURL(blob);
+      
+      const link = document.createElement('a');
+      link.href = blobUrl;
+      link.download = fileName || 'alpsstudio_video.mp4';
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(blobUrl);
+      
+      showToast('Video berhasil diunduh ke perangkat Anda!', 'success');
+    } catch (e) {
+      console.warn('Cross-origin direct download blocked. Falling back to new tab:', e);
+      window.open(fileUrl, '_blank');
+      showToast('Mengalihkan ke tautan video di tab baru. Silakan klik kanan dan Simpan Video!', 'success');
+    }
+  };
+
   // Render Category-Specific Glowing Code & Flow Diagrams (Solves "animasi kode sesuai skrip")
   const renderCategoryAnimations = () => {
     if (!selectedScript) return null;
@@ -686,7 +714,7 @@ function VideoGeneratorContent() {
                     <label className="block text-xs font-bold uppercase tracking-widest text-zinc-400">Pilih Template Visual Video</label>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-2">
                       {[
-                        { id: 'ara_influencer_explainer', label: '🎥 Ara AI Speaker (Premium)', desc: 'Multiscene: Presenter AI berbicara bergantian dengan B-roll koding neon & pengetikan keyboard close-up.', color: 'border-pink-500 text-pink-400 bg-pink-950/15' },
+                        { id: 'ara_influencer_explainer', label: '🎥 alpsstudio AI Speaker (Premium)', desc: 'Multiscene: Presenter AI berbicara bergantian dengan B-roll koding neon & pengetikan keyboard close-up.', color: 'border-pink-500 text-pink-400 bg-pink-950/15' },
                         { id: 'coding_neon', label: 'Neon Cyber Code', desc: 'Satu adegan: Editor koding gelap statis dengan pendaran neon ultraviolet.', color: 'border-purple-500 text-purple-400 bg-purple-950/15' },
                         { id: 'retro_terminal', label: 'Retro Terminal', desc: 'Satu adegan: Gaya komputer tabung antik berpancar kursor hijau.', color: 'border-cyan-500 text-cyan-400 bg-cyan-950/15' },
                         { id: 'cyber_matrix', label: 'Matrix Binary Rain', desc: 'Satu adegan: Hujan kode biner berguguran digital futuristik.', color: 'border-emerald-500 text-emerald-400 bg-emerald-950/15' }
@@ -826,16 +854,13 @@ function VideoGeneratorContent() {
                             Pratinjau Player
                           </button>
                           
-                          <a
-                            href={vid.file_url}
-                            download={vid.file_name || 'ara_video.mp4'}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="py-2 px-3 bg-purple-650 hover:bg-purple-550 text-white rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5"
+                          <button
+                            onClick={() => handleDownload(vid.file_url, vid.file_name)}
+                            className="py-2 px-3 bg-purple-650 hover:bg-purple-550 text-white rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer"
                           >
                             <Download className="w-4 h-4" />
                             Download
-                          </a>
+                          </button>
                         </div>
 
                       </div>
@@ -964,7 +989,7 @@ function VideoGeneratorContent() {
                       </div>
 
                       <div className="relative z-10 bg-black/75 px-1 py-0.5 rounded border border-purple-500/20 text-[5.5px] font-black text-purple-300 text-center font-mono uppercase tracking-wider">
-                        Ara AI Presenter
+                        alpsstudio Presenter
                       </div>
                     </div>
                   )}
@@ -1017,7 +1042,7 @@ function VideoGeneratorContent() {
                       />
                     </div>
                     <div className="min-w-0 text-left">
-                      <h5 className="text-[9px] font-extrabold text-white">Ara AI Influencer</h5>
+                      <h5 className="text-[9px] font-extrabold text-white">alpsstudio Presenter</h5>
                       <span className="text-[8px] text-zinc-400 font-semibold block mt-0.5">Avatar Aktif & Siap Mengisi Video</span>
                     </div>
                   </div>
@@ -1030,7 +1055,7 @@ function VideoGeneratorContent() {
               
               {/* Top info */}
               <div className="flex justify-between items-center">
-                <span className="text-[9px] font-bold text-zinc-400 bg-black/40 backdrop-blur-md px-2 py-0.5 rounded-full">@aracoding.ai</span>
+                <span className="text-[9px] font-bold text-zinc-400 bg-black/40 backdrop-blur-md px-2 py-0.5 rounded-full">@alpsstudio</span>
                 <span className="text-[9px] font-bold text-cyan-400 bg-cyan-950/50 backdrop-blur-md px-1.5 py-0.5 rounded-full flex items-center gap-0.5">
                   <span className="w-1 h-1 rounded-full bg-cyan-400 animate-pulse"></span> LIVE
                 </span>
@@ -1050,7 +1075,7 @@ function VideoGeneratorContent() {
                         currentScene === 2 ? '⌨️ "Mari kita perhatikan bagaimana kodenya berjalan secara cepat, terstruktur, dan bersih..."' :
                         currentScene === 3 ? '💡 "Kita memakai React Hook useState untuk mendefinisikan status variabel di memori..."' :
                         currentScene === 4 ? '💻 "Sangat dinamis dan instan! Setiap ada pembaruan data, komponen langsung me-render ulang UI..."' :
-                        '👋 "Gampang banget kan? Klik like, simpan, dan ikuti Ara AI Studio untuk tips coding seru berikutnya!"'
+                        '👋 "Gampang banget kan? Klik like, simpan, dan ikuti Alps Studio untuk tips coding seru berikutnya!"'
                       ) : (
                         selectedScript.hook || selectedScript.title
                       )}

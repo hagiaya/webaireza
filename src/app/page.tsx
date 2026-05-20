@@ -206,7 +206,7 @@ export default function DashboardPage() {
         
         <div className="flex items-center gap-2 bg-purple-950/20 px-3.5 py-2 rounded-2xl border border-purple-900/40 backdrop-blur-md">
           <Sparkles className="w-4 h-4 text-purple-400 animate-pulse" />
-          <span className="text-xs font-bold text-purple-300">Ara Studio Autopilot Active</span>
+          <span className="text-xs font-bold text-purple-300">Alps Studio Autopilot Active</span>
         </div>
       </div>
 
