@@ -159,12 +159,12 @@ export default function GalleryPage() {
   const getPreviewVideoSrc = () => {
     if (!selectedVideo) return '';
     if (currentScene === 1 || currentScene === 3 || currentScene === 5) {
-      return 'https://assets.mixkit.co/videos/preview/mixkit-woman-recording-a-video-blog-with-a-smartphone-40245-large.mp4';
+      return 'https://assets.mixkit.co/videos/40245/40245-720.mp4';
     }
     if (currentScene === 2) {
-      return 'https://assets.mixkit.co/videos/preview/mixkit-hand-typing-on-a-glowing-computer-keyboard-close-up-34283-large.mp4';
+      return 'https://assets.mixkit.co/videos/34283/34283-720.mp4';
     }
-    return 'https://assets.mixkit.co/videos/preview/mixkit-coding-on-a-computer-screen-close-up-34282-large.mp4';
+    return 'https://assets.mixkit.co/videos/34282/34282-720.mp4';
   };
 
   const activeScript = selectedVideo ? scripts.find(s => s.id === selectedVideo.script_id) : null;

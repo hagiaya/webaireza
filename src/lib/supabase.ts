@@ -180,7 +180,7 @@ const DEFAULT_VIDEOS = [
     id: 'v1',
     script_id: 's1',
     audio_id: 'a1',
-    file_url: 'https://assets.mixkit.co/videos/preview/mixkit-coding-on-a-computer-screen-close-up-34282-large.mp4',
+    file_url: 'https://assets.mixkit.co/videos/34282/34282-720.mp4',
     file_name: 'ara_video_1.mp4',
     template_type: 'coding_neon',
     video_metadata: { size: '12MB', resolution: '1080x1920', duration: 30 },

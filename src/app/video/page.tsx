@@ -160,18 +160,18 @@ function VideoGeneratorContent() {
 
     // Explainer scenes matching Mixkit high-quality sources
     if (currentScene === 1) {
-      return 'https://assets.mixkit.co/videos/preview/mixkit-woman-recording-a-video-blog-with-a-smartphone-40245-large.mp4'; // Speaking Ara intro
+      return 'https://assets.mixkit.co/videos/40245/40245-720.mp4'; // Speaking Ara intro
     }
     if (currentScene === 2) {
-      return 'https://assets.mixkit.co/videos/preview/mixkit-hand-typing-on-a-glowing-computer-keyboard-close-up-34283-large.mp4'; // Closeup typing B-roll
+      return 'https://assets.mixkit.co/videos/34283/34283-720.mp4'; // Closeup typing B-roll
     }
     if (currentScene === 3) {
-      return 'https://assets.mixkit.co/videos/preview/mixkit-woman-recording-a-video-blog-with-a-smartphone-40245-large.mp4'; // Speaking Ara concept
+      return 'https://assets.mixkit.co/videos/40245/40245-720.mp4'; // Speaking Ara concept
     }
     if (currentScene === 4) {
-      return 'https://assets.mixkit.co/videos/preview/mixkit-coding-on-a-computer-screen-close-up-34282-large.mp4'; // Close-up neon koding screen
+      return 'https://assets.mixkit.co/videos/34282/34282-720.mp4'; // Close-up neon koding screen
     }
-    return 'https://assets.mixkit.co/videos/preview/mixkit-woman-recording-a-video-blog-with-a-smartphone-40245-large.mp4'; // Waving CTA outro
+    return 'https://assets.mixkit.co/videos/40245/40245-720.mp4'; // Waving CTA outro
   };
 
   // Selected Script Data

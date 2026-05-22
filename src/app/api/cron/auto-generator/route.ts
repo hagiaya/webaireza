@@ -132,9 +132,9 @@ export async function POST() {
     ];
 
     const videoTemplates = {
-      coding_neon: 'https://assets.mixkit.co/videos/preview/mixkit-coding-on-a-computer-screen-close-up-34282-large.mp4',
-      retro_terminal: 'https://assets.mixkit.co/videos/preview/mixkit-hand-typing-on-a-glowing-computer-keyboard-close-up-34283-large.mp4',
-      cyber_matrix: 'https://assets.mixkit.co/videos/preview/mixkit-stream-of-green-matrix-style-code-numbers-42864-large.mp4'
+      coding_neon: 'https://assets.mixkit.co/videos/34282/34282-720.mp4',
+      retro_terminal: 'https://assets.mixkit.co/videos/34283/34283-720.mp4',
+      cyber_matrix: 'https://assets.mixkit.co/videos/42864/42864-720.mp4'
     };
 
     for (const item of slotsToGenerate) {
