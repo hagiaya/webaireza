@@ -9,7 +9,7 @@ import {
 } from 'lucide-react';
 import { useToast } from '@/context/ToastContext';
 import { useAudio } from '@/context/AudioContext';
-import { supabase } from '@/lib/supabase';
+import { supabase, isMockDb } from '@/lib/supabase';
 import ScriptCard from '@/components/ScriptCard';
 
 function ScriptsContent() {
@@ -115,6 +115,9 @@ function ScriptsContent() {
       const data = await res.json();
       
       if (data.success) {
+        if (isMockDb) {
+          await supabase.from('scripts').insert(data.script);
+        }
         setPreviewScript(data.script);
         setEditedTitle(data.script.title);
         setEditedContent(data.script.content);

@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { supabase } from '@/lib/supabase';
+import { supabase, isMockDb } from '@/lib/supabase';
 
 // Helper function to split text into chunks under maximum length without cutting words
 function splitTextIntoChunks(text: string, maxLength: number = 170): string[] {
@@ -112,6 +112,10 @@ export async function POST() {
     const scheduledToday = safeCal.filter((c: any) => c.scheduled_date === targetDate);
     const createdLogs: string[] = [];
     const automationSummary = [];
+    const scriptsInserted: any[] = [];
+    const audiosInserted: any[] = [];
+    const videosInserted: any[] = [];
+    const calendarInserted: any[] = [];
 
     // Helper for slots timings
     const slotTimes = {
@@ -163,63 +167,70 @@ export async function POST() {
       const { data: insScript, error: scriptErr } = await supabase.from('scripts').insert(scriptEntry).select();
       if (scriptErr) throw new Error(`Script insert error: ${scriptErr.message}`);
       
+      const scriptRow = insScript && insScript.length > 0 ? insScript[0] : { id: `mock-s-${uniqueSuffix}`, ...scriptEntry };
+      scriptsInserted.push(scriptRow);
+      
       // Get inserted script ID (mock DB returns it directly, real DB needs extraction)
-      const scriptId = insScript && insScript.length > 0 ? insScript[0].id : `mock-s-${uniqueSuffix}`;
+      const scriptId = scriptRow.id;
 
       // PIPELINE STEP 2: Auto-generate Speech TTS Audio strictly using ElevenLabs (Bella)
       const audioFileName = `ara_autopilot_${item.slot}_${targetDate.replace(/-/g, '')}_${uniqueSuffix}.mp3`;
       let finalAudioUrl = '';
 
-      const elevenlabsApiKey = process.env.ELEVENLABS_API_KEY;
-      if (!elevenlabsApiKey || elevenlabsApiKey === 'your_elevenlabs_api_key') {
-        throw new Error('ElevenLabs API Key belum dikonfigurasi di file .env.local');
-      }
+      if (isMockDb) {
+        finalAudioUrl = 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3';
+      } else {
+        const elevenlabsApiKey = process.env.ELEVENLABS_API_KEY;
+        if (!elevenlabsApiKey || elevenlabsApiKey === 'your_elevenlabs_api_key') {
+          throw new Error('ElevenLabs API Key belum dikonfigurasi di file .env.local');
+        }
 
-      const voiceId = 'EXAVITQu4vr4xnSDxMaL'; // Bella (ElevenLabs - Free Plan compatible)
-      const elevenlabsUrl = `https://api.elevenlabs.io/v1/text-to-speech/${voiceId}`;
-      
-      const response = await fetch(elevenlabsUrl, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'xi-api-key': elevenlabsApiKey
-        },
-        body: JSON.stringify({
-          text: randomCreative.content,
-          model_id: 'eleven_multilingual_v2',
-          voice_settings: {
-            stability: 0.5,
-            similarity_boost: 0.75,
-            style: 0.0,
-            use_speaker_boost: true
-          }
-        })
-      });
-
-      if (!response.ok) {
-        const errMsg = await response.text();
-        throw new Error(`ElevenLabs synthesis failed: ${errMsg}`);
-      }
-
-      const arrayBuffer = await response.arrayBuffer();
-      const combinedBuffer = Buffer.from(arrayBuffer);
-
-      // Upload combined buffer to Supabase Storage
-      const { error: uploadErr } = await supabase.storage
-        .from('audios')
-        .upload(audioFileName, combinedBuffer, {
-          contentType: 'audio/mpeg',
-          upsert: true
+        const voiceId = 'EXAVITQu4vr4xnSDxMaL'; // Bella (ElevenLabs - Free Plan compatible)
+        const elevenlabsUrl = `https://api.elevenlabs.io/v1/text-to-speech/${voiceId}`;
+        
+        const response = await fetch(elevenlabsUrl, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'xi-api-key': elevenlabsApiKey
+          },
+          body: JSON.stringify({
+            text: randomCreative.content,
+            model_id: 'eleven_multilingual_v2',
+            voice_settings: {
+              stability: 0.5,
+              similarity_boost: 0.75,
+              style: 0.0,
+              use_speaker_boost: true
+            }
+          })
         });
 
-      if (uploadErr) {
-        throw new Error(`Gagal mengunggah vokal autopilot ke Storage: ${uploadErr.message}`);
-      }
+        if (!response.ok) {
+          const errMsg = await response.text();
+          throw new Error(`ElevenLabs synthesis failed: ${errMsg}`);
+        }
 
-      const { data: publicUrlData } = supabase.storage
-        .from('audios')
-        .getPublicUrl(audioFileName);
-      finalAudioUrl = publicUrlData?.publicUrl || '';
+        const arrayBuffer = await response.arrayBuffer();
+        const combinedBuffer = Buffer.from(arrayBuffer);
+
+        // Upload combined buffer to Supabase Storage
+        const { error: uploadErr } = await supabase.storage
+          .from('audios')
+          .upload(audioFileName, combinedBuffer, {
+            contentType: 'audio/mpeg',
+            upsert: true
+          });
+
+        if (uploadErr) {
+          throw new Error(`Gagal mengunggah vokal autopilot ke Storage: ${uploadErr.message}`);
+        }
+
+        const { data: publicUrlData } = supabase.storage
+          .from('audios')
+          .getPublicUrl(audioFileName);
+        finalAudioUrl = publicUrlData?.publicUrl || '';
+      }
 
       const audioEntry = {
         script_id: scriptId,
@@ -232,7 +243,9 @@ export async function POST() {
 
       const { data: insAudio, error: audioErr } = await supabase.from('audios').insert(audioEntry).select();
       if (audioErr) throw new Error(`Audio insert error: ${audioErr.message}`);
-      const audioId = insAudio && insAudio.length > 0 ? insAudio[0].id : `mock-a-${uniqueSuffix}`;
+      const audioRow = insAudio && insAudio.length > 0 ? insAudio[0] : { id: `mock-a-${uniqueSuffix}`, ...audioEntry };
+      audiosInserted.push(audioRow);
+      const audioId = audioRow.id;
 
       // PIPELINE STEP 3: Auto-render dynamic Coding Video
       const videoEntry = {
@@ -250,7 +263,9 @@ export async function POST() {
 
       const { data: insVideo, error: videoErr } = await supabase.from('videos').insert(videoEntry).select();
       if (videoErr) throw new Error(`Video insert error: ${videoErr.message}`);
-      const videoId = insVideo && insVideo.length > 0 ? insVideo[0].id : `mock-v-${uniqueSuffix}`;
+      const videoRow = insVideo && insVideo.length > 0 ? insVideo[0] : { id: `mock-v-${uniqueSuffix}`, ...videoEntry };
+      videosInserted.push(videoRow);
+      const videoId = videoRow.id;
 
       // PIPELINE STEP 4: Auto-schedule in Content Calendar
       const captionText = `${randomCreative.title}! 🚀✨ ${randomCreative.hook} #coding #developer #jasapembuatanwebsite #enterpriseapp #arastudio`;
@@ -265,7 +280,9 @@ export async function POST() {
         status: 'scheduled'
       };
 
-      await supabase.from('content_calendar').insert(calendarEntry);
+      const { data: insCal } = await supabase.from('content_calendar').insert(calendarEntry).select();
+      const calRow = insCal && insCal.length > 0 ? insCal[0] : { id: `mock-c-${uniqueSuffix}`, ...calendarEntry };
+      calendarInserted.push(calRow);
       
       // Update script status to 'used' as it's active in calendar
       await supabase.from('scripts').update({ status: 'used' }).eq('id', scriptId);
@@ -285,7 +302,11 @@ export async function POST() {
       target_date: targetDate,
       message: `Autopilot Ara Studio sukses dijalankan untuk tanggal ${targetDate}!`,
       logs: createdLogs,
-      summary: automationSummary
+      summary: automationSummary,
+      scripts: scriptsInserted,
+      audios: audiosInserted,
+      videos: videosInserted,
+      calendar: calendarInserted
     });
 
   } catch (error: any) {

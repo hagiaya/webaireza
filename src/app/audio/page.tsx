@@ -9,7 +9,7 @@ import {
 } from 'lucide-react';
 import { useToast } from '@/context/ToastContext';
 import { useAudio } from '@/context/AudioContext';
-import { supabase } from '@/lib/supabase';
+import { supabase, isMockDb } from '@/lib/supabase';
 
 
 
@@ -142,6 +142,17 @@ function AudioGeneratorContent() {
       const dbRes = await res.json();
       if (!dbRes.success) {
         throw new Error(dbRes.message || 'Gagal membuat audio');
+      }
+
+      if (isMockDb && dbRes.data) {
+        const audioRecord = Array.isArray(dbRes.data) ? dbRes.data[0] : dbRes.data;
+        const { data: existingAudios } = await supabase.from('audios').select('*').eq('script_id', scriptId);
+        if (existingAudios && existingAudios.length > 0) {
+          await supabase.from('audios').update(audioRecord).eq('id', existingAudios[0].id);
+        } else {
+          await supabase.from('audios').insert(audioRecord);
+        }
+        await supabase.from('scripts').update({ status: 'ready' }).eq('id', scriptId);
       }
       
       setProgress(prev => ({ ...prev, [scriptId]: 100 }));

@@ -136,30 +136,22 @@ export default function GalleryPage() {
   const handleDownload = async (fileUrl: string, fileName: string) => {
     if (!fileUrl) return;
     try {
-      showToast('Menyiapkan file download...', 'info');
+      showToast('Sedang mengunduh video Ara...', 'info');
       
-      // If it is a cross-origin Mixkit link or similar, simple download attr will fail.
-      // Fetching the file as a blob forces local download through JavaScript.
-      const response = await fetch(fileUrl);
-      if (!response.ok) throw new Error('CORS or network error');
-      
-      const blob = await response.blob();
-      const blobUrl = window.URL.createObjectURL(blob);
+      // Use our server-side proxy to fetch and stream the video with proper referer headers
+      const proxyUrl = `/api/download-proxy?url=${encodeURIComponent(fileUrl)}&filename=${encodeURIComponent(fileName)}`;
       
       const link = document.createElement('a');
-      link.href = blobUrl;
+      link.href = proxyUrl;
       link.download = fileName || 'alpsstudio_video.mp4';
       document.body.appendChild(link);
       link.click();
       link.remove();
-      window.URL.revokeObjectURL(blobUrl);
       
       showToast('Video berhasil diunduh ke perangkat Anda!', 'success');
     } catch (e) {
-      console.warn('Cross-origin direct download blocked. Falling back to new tab:', e);
-      // Fallback: Open file directly in new tab so they can right-click and save
-      window.open(fileUrl, '_blank');
-      showToast('Mengalihkan ke tautan video di tab baru. Silakan klik kanan dan Simpan Video!', 'success');
+      console.warn('Download failed:', e);
+      showToast('Gagal mengunduh video secara otomatis.', 'error');
     }
   };
 

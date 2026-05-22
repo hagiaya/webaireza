@@ -149,6 +149,6 @@ Tolong kembalikan respons dalam format JSON mentah (jangan dibungkus markdown \`
 
   } catch (error: any) {
     console.error('Error generating script route:', error);
-    return NextResponse.json({ success: false, error: error.message || 'Internal Server Error' }, { status: 500 });
+    return NextResponse.json({ success: false, message: error.message || 'Internal Server Error', error: error.message }, { status: 500 });
   }
 }

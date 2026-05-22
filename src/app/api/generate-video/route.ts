@@ -129,6 +129,6 @@ export async function POST(req: Request) {
 
   } catch (error: any) {
     console.error('Error in video generate API:', error);
-    return NextResponse.json({ success: false, error: error.message || 'Internal Server Error' }, { status: 500 });
+    return NextResponse.json({ success: false, message: error.message || 'Internal Server Error', error: error.message }, { status: 500 });
   }
 }

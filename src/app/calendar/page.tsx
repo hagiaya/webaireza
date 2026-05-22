@@ -10,7 +10,7 @@ import {
 } from 'lucide-react';
 import { useToast } from '@/context/ToastContext';
 import { useAudio } from '@/context/AudioContext';
-import { supabase } from '@/lib/supabase';
+import { supabase, isMockDb } from '@/lib/supabase';
 import PlatformIcon from '@/components/PlatformIcon';
 import StatusBadge from '@/components/StatusBadge';
 
@@ -91,6 +91,15 @@ function ContentCalendarContent() {
       const data = await res.json();
       
       if (data.success) {
+        if (isMockDb && data.entries && data.entries.length > 0) {
+          await supabase.from('content_calendar').insert(data.entries.map((e: any) => {
+            const { script_title, ...rest } = e;
+            return rest;
+          }));
+          for (const entry of data.entries) {
+            await supabase.from('scripts').update({ status: 'used' }).eq('id', entry.script_id);
+          }
+        }
         showToast(data.message || 'Jadwal otomatis berhasil dibuat!', 'success');
         fetchCalendarData();
       } else {
@@ -144,6 +153,10 @@ function ContentCalendarContent() {
       const data = await res.json();
 
       if (data.success) {
+        if (isMockDb && data.entry) {
+          await supabase.from('content_calendar').insert(data.entry);
+          await supabase.from('scripts').update({ status: 'used' }).eq('id', scheduleScriptId);
+        }
         showToast('Naskah berhasil dijadwalkan!', 'success');
         setIsModalOpen(false);
         setScheduleScriptId('');

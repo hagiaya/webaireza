@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { supabase } from '@/lib/supabase';
+import { supabase, isMockDb } from '@/lib/supabase';
 
 // Helper function to split text into chunks under maximum length without cutting words
 function splitTextIntoChunks(text: string, maxLength: number = 170): string[] {
@@ -90,7 +90,9 @@ export async function POST(req: Request) {
       return NextResponse.json({
         success: true,
         count: createdAudios.length,
-        message: `Berhasil men-generate ${createdAudios.length} audio TTS untuk hari ini.`
+        message: `Berhasil men-generate ${createdAudios.length} audio TTS untuk hari ini.`,
+        audios: createdAudios,
+        scriptIdsToUpdate: readyOrDraftScripts.map((s: any) => s.id)
       });
     }
 
@@ -103,9 +105,7 @@ export async function POST(req: Request) {
     let finalFileName = file_name;
 
     const elevenlabsApiKey = process.env.ELEVENLABS_API_KEY;
-    if (!elevenlabsApiKey || elevenlabsApiKey === 'your_elevenlabs_api_key') {
-      return NextResponse.json({ success: false, message: 'ElevenLabs API Key belum dikonfigurasi di file .env.local' }, { status: 400 });
-    }
+    const hasElevenLabsKey = elevenlabsApiKey && elevenlabsApiKey !== '' && elevenlabsApiKey !== 'your_elevenlabs_api_key';
 
     const finalVoice = (voice && voice !== 'nova' && voice !== 'shimmer' && voice !== 'coral' && voice !== 'alloy')
       ? voice
@@ -120,48 +120,55 @@ export async function POST(req: Request) {
       }
 
       let combinedBuffer: Buffer;
+      let usingElevenLabs = false;
 
-      // 2. Synthesize strictly using ElevenLabs
-      try {
-        const voiceId = finalVoice;
-        const elevenlabsUrl = `https://api.elevenlabs.io/v1/text-to-speech/${voiceId}`;
-        
-        const response = await fetch(elevenlabsUrl, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'xi-api-key': elevenlabsApiKey
-          },
-          body: JSON.stringify({
-            text: script.content || '',
-            model_id: 'eleven_multilingual_v2',
-            voice_settings: {
-              stability: 0.5,
-              similarity_boost: 0.75,
-              style: 0.0,
-              use_speaker_boost: true
-            }
-          })
-        });
+      // 2. Synthesize using ElevenLabs or Google Translate TTS fallback
+      if (hasElevenLabsKey && !isMockDb) {
+        try {
+          const voiceId = finalVoice;
+          const elevenlabsUrl = `https://api.elevenlabs.io/v1/text-to-speech/${voiceId}`;
+          
+          const response = await fetch(elevenlabsUrl, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'xi-api-key': elevenlabsApiKey!
+            },
+            body: JSON.stringify({
+              text: script.content || '',
+              model_id: 'eleven_multilingual_v2',
+              voice_settings: {
+                stability: 0.5,
+                similarity_boost: 0.75,
+                style: 0.0,
+                use_speaker_boost: true
+              }
+            })
+          });
 
-        if (!response.ok) {
-          const errMsg = await response.text();
-          throw new Error(`ElevenLabs synthesis failed: ${errMsg}`);
+          if (!response.ok) {
+            const errMsg = await response.text();
+            throw new Error(`ElevenLabs synthesis failed: ${errMsg}`);
+          }
+
+          const arrayBuffer = await response.arrayBuffer();
+          combinedBuffer = Buffer.from(arrayBuffer);
+          usingElevenLabs = true;
+          console.log(`Successfully synthesized script using ElevenLabs Voice ${voiceId}`);
+        } catch (elErr: any) {
+          console.error('ElevenLabs synthesis failed, falling back to Google TTS:', elErr);
+          combinedBuffer = await generateGoogleTts(script.content || '');
         }
-
-        const arrayBuffer = await response.arrayBuffer();
-        combinedBuffer = Buffer.from(arrayBuffer);
-        console.log(`Successfully synthesized script using ElevenLabs Voice ${voiceId}`);
-      } catch (elErr: any) {
-        console.error('ElevenLabs synthesis failed:', elErr);
-        return NextResponse.json({ success: false, message: `Gagal membuat suara ElevenLabs: ${elErr.message || elErr}` }, { status: 500 });
+      } else {
+        console.log('ElevenLabs key not configured or in Mock DB mode. Synthesizing with Google Translate TTS.');
+        combinedBuffer = await generateGoogleTts(script.content || '');
       }
 
       // 3. Generate filename
       const slotNum = script.slot || 1;
       const todayStr = new Date().toISOString().split('T')[0].replace(/-/g, '');
       const uniqueId = Math.random().toString(36).substring(2, 6);
-      finalFileName = `ara_${slotNum}_${todayStr}_elevenlabs_${script.id.substring(0, 4)}_${uniqueId}.mp3`;
+      finalFileName = `ara_${slotNum}_${todayStr}_${usingElevenLabs ? 'elevenlabs' : 'googletts'}_${script.id.substring(0, 4)}_${uniqueId}.mp3`;
 
       // 4. Upload combined buffer to Supabase Storage
       const { data: uploadData, error: uploadErr } = await supabase.storage
@@ -219,6 +226,6 @@ export async function POST(req: Request) {
 
   } catch (error: any) {
     console.error('Error generating audio route:', error);
-    return NextResponse.json({ success: false, error: error.message || 'Internal Server Error' }, { status: 500 });
+    return NextResponse.json({ success: false, message: error.message || 'Internal Server Error', error: error.message }, { status: 500 });
   }
 }

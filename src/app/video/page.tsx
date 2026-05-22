@@ -10,7 +10,7 @@ import {
 } from 'lucide-react';
 import { useToast } from '@/context/ToastContext';
 import { useAudio } from '@/context/AudioContext';
-import { supabase } from '@/lib/supabase';
+import { supabase, isMockDb } from '@/lib/supabase';
 import PlatformIcon from '@/components/PlatformIcon';
 
 function VideoGeneratorContent() {
@@ -208,6 +208,17 @@ function VideoGeneratorContent() {
       const dbRes = await res.json();
       if (!dbRes.success) throw new Error(dbRes.message);
 
+      if (isMockDb && dbRes.data) {
+        const audioRecord = Array.isArray(dbRes.data) ? dbRes.data[0] : dbRes.data;
+        const { data: existingAudios } = await supabase.from('audios').select('*').eq('script_id', selectedScriptId);
+        if (existingAudios && existingAudios.length > 0) {
+          await supabase.from('audios').update(audioRecord).eq('id', existingAudios[0].id);
+        } else {
+          await supabase.from('audios').insert(audioRecord);
+        }
+        await supabase.from('scripts').update({ status: 'ready' }).eq('id', selectedScriptId);
+      }
+
       showToast('Vokal TTS Ara berhasil disintesis!', 'success');
       await fetchData(); // reload data
     } catch (e: any) {
@@ -268,6 +279,16 @@ function VideoGeneratorContent() {
       const data = await res.json();
       if (!data.success) throw new Error(data.message);
 
+      if (isMockDb && data.video) {
+        const { data: existingVideos } = await supabase.from('videos').select('*').eq('script_id', selectedScriptId);
+        if (existingVideos && existingVideos.length > 0) {
+          await supabase.from('videos').update(data.video).eq('id', existingVideos[0].id);
+        } else {
+          await supabase.from('videos').insert(data.video);
+        }
+        await supabase.from('scripts').update({ status: 'ready' }).eq('id', selectedScriptId);
+      }
+
       showToast('Video Ara berhasil dirender dan disimpan di Galeri!', 'success');
       setVideoProgress(100);
       await fetchData(); // refresh list
@@ -299,28 +320,22 @@ function VideoGeneratorContent() {
   const handleDownload = async (fileUrl: string, fileName: string) => {
     if (!fileUrl) return;
     try {
-      showToast('Menyiapkan file download...', 'info');
+      showToast('Sedang mengunduh video Ara...', 'info');
       
-      // Blob fetching downloads cross-origin mixkit/royalty-free files properly
-      const response = await fetch(fileUrl);
-      if (!response.ok) throw new Error('CORS or network error');
-      
-      const blob = await response.blob();
-      const blobUrl = window.URL.createObjectURL(blob);
+      // Use our server-side proxy to fetch and stream the video with proper referer headers
+      const proxyUrl = `/api/download-proxy?url=${encodeURIComponent(fileUrl)}&filename=${encodeURIComponent(fileName)}`;
       
       const link = document.createElement('a');
-      link.href = blobUrl;
+      link.href = proxyUrl;
       link.download = fileName || 'alpsstudio_video.mp4';
       document.body.appendChild(link);
       link.click();
       link.remove();
-      window.URL.revokeObjectURL(blobUrl);
       
       showToast('Video berhasil diunduh ke perangkat Anda!', 'success');
     } catch (e) {
-      console.warn('Cross-origin direct download blocked. Falling back to new tab:', e);
-      window.open(fileUrl, '_blank');
-      showToast('Mengalihkan ke tautan video di tab baru. Silakan klik kanan dan Simpan Video!', 'success');
+      console.warn('Download failed:', e);
+      showToast('Gagal mengunduh video secara otomatis.', 'error');
     }
   };
 

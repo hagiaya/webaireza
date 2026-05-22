@@ -265,7 +265,13 @@ class MockDatabase {
         }));
         const updated = [...data, ...newRows];
         this.saveTableData(table, updated);
-        return Promise.resolve({ data: newRows, error: null });
+        const result = { data: newRows, error: null };
+        const p = Promise.resolve(result);
+        return Object.assign(p, {
+          select: (columns: string = '*') => {
+            return Promise.resolve(result);
+          }
+        });
       },
       update: (fields: any) => {
         return {
@@ -278,7 +284,13 @@ class MockDatabase {
             });
             this.saveTableData(table, updated);
             const affected = updated.filter(item => item[col] === val);
-            return Promise.resolve({ data: affected, error: null });
+            const result = { data: affected, error: null };
+            const p = Promise.resolve(result);
+            return Object.assign(p, {
+              select: (columns: string = '*') => {
+                return Promise.resolve(result);
+              }
+            });
           }
         };
       },
@@ -287,7 +299,13 @@ class MockDatabase {
           eq: (col: string, val: any) => {
             const updated = data.filter(item => item[col] !== val);
             this.saveTableData(table, updated);
-            return Promise.resolve({ data: [], error: null });
+            const result = { data: [], error: null };
+            const p = Promise.resolve(result);
+            return Object.assign(p, {
+              select: (columns: string = '*') => {
+                return Promise.resolve(result);
+              }
+            });
           }
         };
       }

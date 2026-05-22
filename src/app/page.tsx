@@ -12,6 +12,7 @@ import { useToast } from '@/context/ToastContext';
 import { useAudio } from '@/context/AudioContext';
 import StatusBadge from '@/components/StatusBadge';
 import PlatformIcon from '@/components/PlatformIcon';
+import { supabase, isMockDb } from '@/lib/supabase';
 
 interface DashboardStats {
   scriptsToday: number;
@@ -89,6 +90,22 @@ export default function DashboardPage() {
           const data = await res.json();
           if (data.success && data.summary && data.summary.length > 0) {
             localStorage.setItem('ara_autopilot_last_run', todayStr);
+            
+            if (isMockDb) {
+              if (data.scripts && data.scripts.length > 0) {
+                await supabase.from('scripts').insert(data.scripts);
+              }
+              if (data.audios && data.audios.length > 0) {
+                await supabase.from('audios').insert(data.audios);
+              }
+              if (data.videos && data.videos.length > 0) {
+                await supabase.from('videos').insert(data.videos);
+              }
+              if (data.calendar && data.calendar.length > 0) {
+                await supabase.from('content_calendar').insert(data.calendar);
+              }
+            }
+
             console.log('🤖 Autopilot Ara sukses menjadwalkan 3 video baru:', data.summary);
             showToast('Sistem Autopilot Ara: 3 video otomatis hari ini berhasil dibuat!', 'success');
             // Reload stats to show newly scheduled items
@@ -122,6 +139,16 @@ export default function DashboardPage() {
       const data = await res.json();
       
       if (data.success) {
+        if (isMockDb) {
+          if (data.audios && data.audios.length > 0) {
+            await supabase.from('audios').insert(data.audios);
+          }
+          if (data.scriptIdsToUpdate && data.scriptIdsToUpdate.length > 0) {
+            for (const sId of data.scriptIdsToUpdate) {
+              await supabase.from('scripts').update({ status: 'ready' }).eq('id', sId);
+            }
+          }
+        }
         showToast(`Berhasil men-generate ${data.count} audio TTS baru!`, 'success');
         fetchDashboardData(true);
       } else {
